@@ -21,10 +21,10 @@ const CHECK_ONLY = process.argv.includes('--check');
 
 // 节内的裸引用（「见第 8 条」）只在这几个栏位里找：来源栏里的「第 N 条」几乎都是
 // 法条条款号，扫进来全是误报。
-const FIELDS = /^- (说人话|收益|备注|成本)：/;
+const FIELDS = /^- (说人话|Nói một cách bình dân|收益|Lợi ích|备注|Ghi chú|成本|Chi phí)[:：]/;
 // 但带节号的跨节引用（「见第 11 节第 16 条」）不会和法条混淆，来源栏里也有，一并扫。
 // book/26 第 103 条那处「日志留存见第 11 节第 16 条」就写在来源栏里，差点漏掉。
-const CROSS_FIELDS = /^- (说人话|收益|备注|成本|来源)：/;
+const CROSS_FIELDS = /^- (说人话|Nói một cách bình dân|收益|Lợi ích|备注|Ghi chú|成本|Chi phí|来源|Nguồn)[:：]/;
 
 const files = readdirSync(resolve(ROOT, 'book')).filter(f => /^\d\d-.*\.md$/.test(f)).sort();
 // docs/ 下的长文也扫。它们和节首引言一样，长期不在扫描范围内：条号被顺延撞歪时

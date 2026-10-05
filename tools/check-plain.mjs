@@ -77,8 +77,11 @@ for (const f of files) {
   for (const line of lines) {
     const h = line.match(/^### (\d+)\. (.*)$/);
     if (h) { flush(); no = Number(h[1]); title = h[2]; fields = {}; continue; }
-    const m = line.match(/^- (说人话|成本|收益)：(.*)$/);
-    if (m && no) fields[m[1]] = m[2];
+    const m = line.match(/^- (说人话|Nói một cách bình dân|成本|Chi phí|收益|Lợi ích)[:：](.*)$/);
+    if (m && no) {
+      const key = ({ 'Nói một cách bình dân': '说人话', 'Chi phí': '成本', 'Lợi ích': '收益' })[m[1]] ?? m[1];
+      fields[key] = m[2];
+    }
   }
   flush();
 }
