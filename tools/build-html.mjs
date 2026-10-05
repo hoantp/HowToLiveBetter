@@ -125,7 +125,7 @@ const htmlTemplate = `<!DOCTYPE html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>Cẩm Nang Sống Tối Ưu Hiệu Suất · Hướng Dẫn Thực Chứng</title>
-  <meta name="description" content="Cẩm nang sống tối ưu hiệu suất với 650 lời khuyên thực chứng về tuổi thọ, thời gian, tài chính và tự do cá nhân, chia làm 34 chương rõ ràng và dễ đọc.">
+  <meta name="description" content="Cẩm nang sống tối ưu hiệu suất với ${totalItems} lời khuyên thực chứng về tuổi thọ, thời gian, tài chính và tự do cá nhân, chia làm ${totalChapters} chương rõ ràng và dễ đọc.">
   <meta name="theme-color" content="#2563eb">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Cpath d='M17 33l10 11 20-24' fill='none' stroke='white' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1117,7 +1117,7 @@ const htmlTemplate = `<!DOCTYPE html>
           </svg>
           Sống Tối Ưu
         </div>
-        <div class="brand-subtitle">34 Chương · 650 Lời khuyên thực chứng</div>
+        <div class="brand-subtitle">${totalChapters} Chương · ${totalItems} Lời khuyên thực chứng</div>
       </div>
       
       <div class="sidebar-search-box">
@@ -1190,7 +1190,7 @@ const htmlTemplate = `<!DOCTYPE html>
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
-              <input type="text" id="main-search-input" placeholder="Tìm kiếm lời khuyên trong 34 chương (dây an toàn, bảo hiểm, huyết áp, thuế...)">
+              <input type="text" id="main-search-input" placeholder="Tìm kiếm lời khuyên trong ${totalChapters} chương (dây an toàn, bảo hiểm, huyết áp, thuế...)">
             </div>
             
             <div class="grade-btn-group">
@@ -1625,7 +1625,7 @@ const htmlTemplate = `<!DOCTYPE html>
 
         } else if (viewMode === 'all') {
           searchSummaryNotice.style.display = 'none';
-          currentChapterIndicator.textContent = 'Toàn bộ 34 chương (650 lời khuyên)';
+          currentChapterIndicator.textContent = 'Toàn bộ ${totalChapters} chương (${totalItems} lời khuyên)';
           chapterNavFooter.style.display = 'none';
 
           BOOK_DATA.forEach(ch => {
