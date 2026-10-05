@@ -127,6 +127,11 @@ const htmlTemplate = `<!DOCTYPE html>
   <title>Cẩm Nang Sống Tối Ưu Hiệu Suất · Hướng Dẫn Thực Chứng</title>
   <meta name="description" content="Cẩm nang sống tối ưu hiệu suất với ${totalItems} lời khuyên thực chứng về tuổi thọ, thời gian, tài chính và tự do cá nhân, chia làm ${totalChapters} chương rõ ràng và dễ đọc.">
   <meta name="theme-color" content="#2563eb">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Cẩm Nang Sống Tối Ưu Hiệu Suất">
+  <meta property="og:description" content="Cẩm nang sống tối ưu hiệu suất với ${totalItems} lời khuyên thực chứng về tuổi thọ, thời gian, tài chính và tự do cá nhân, chia làm ${totalChapters} chương rõ ràng và dễ đọc.">
+  <meta property="og:image" content="og.png">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Cpath d='M17 33l10 11 20-24' fill='none' stroke='white' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -630,6 +635,15 @@ const htmlTemplate = `<!DOCTYPE html>
       border-bottom: 1px solid var(--border-color);
     }
 
+    .chapter-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+      flex-wrap: wrap;
+    }
+
     .chapter-badge-tag {
       display: inline-block;
       font-size: 0.82rem;
@@ -640,8 +654,34 @@ const htmlTemplate = `<!DOCTYPE html>
       background-color: var(--accent-light);
       padding: 0.25rem 0.75rem;
       border-radius: 6px;
-      margin-bottom: 0.75rem;
       border: 1px solid var(--accent-border);
+    }
+
+    .chapter-share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .chapter-share-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent-border);
+      background-color: var(--accent-light);
+      transform: translateY(-1px);
+    }
+
+    .chapter-share-btn:active {
+      transform: translateY(0);
     }
 
     .chapter-main-title {
@@ -1079,7 +1119,7 @@ const htmlTemplate = `<!DOCTYPE html>
 
     /* Print Styles */
     @media print {
-      .sidebar, .top-bar, .filter-card, .chapter-nav-footer, .copy-link-btn, .back-to-top, #progress-bar {
+      .sidebar, .top-bar, .filter-card, .chapter-nav-footer, .copy-link-btn, .chapter-share-btn, .back-to-top, #progress-bar {
         display: none !important;
       }
       .main-wrapper {
@@ -1426,17 +1466,24 @@ const htmlTemplate = `<!DOCTYPE html>
       }
 
       // Navigation handler
-      function navigateToChapter(idx) {
+      function navigateToChapter(idx, updateHistory = true) {
         if (idx < 0 || idx >= BOOK_DATA.length) return;
         currentChapterIndex = idx;
+        const ch = BOOK_DATA[idx];
+        const newHash = '#c' + ch.num;
+
         if (viewMode === 'all') {
           setViewMode('chapter');
         } else {
           renderContent();
           renderSidebarList();
         }
+        updateDocumentTitle();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        history.replaceState(null, null, '#c' + BOOK_DATA[idx].num);
+
+        if (updateHistory && window.location.hash !== newHash) {
+          history.pushState(null, null, newHash);
+        }
       }
 
       function setViewMode(mode) {
@@ -1445,11 +1492,16 @@ const htmlTemplate = `<!DOCTYPE html>
           btnModeChapter.classList.add('active');
           btnModeAll.classList.remove('active');
           chapterNavFooter.style.display = 'flex';
+          const ch = BOOK_DATA[currentChapterIndex];
+          if (ch && window.location.hash !== '#c' + ch.num) {
+            history.replaceState(null, null, '#c' + ch.num);
+          }
         } else {
           btnModeAll.classList.add('active');
           btnModeChapter.classList.remove('active');
           chapterNavFooter.style.display = 'none';
         }
+        updateDocumentTitle();
         renderContent();
         renderSidebarList();
       }
@@ -1548,14 +1600,59 @@ const htmlTemplate = `<!DOCTYPE html>
         \`;
       }
 
-      // Global copy link function
+      function copyUrlToClipboard(url, successMsg) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url)
+            .then(() => showToast(successMsg))
+            .catch(() => fallbackCopyText(url, successMsg));
+        } else {
+          fallbackCopyText(url, successMsg);
+        }
+      }
+
+      function fallbackCopyText(text, successMsg) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast(successMsg);
+        } catch (e) {
+          showToast('Đã tạo liên kết: ' + text);
+        }
+        document.body.removeChild(ta);
+      }
+
+      // Global copy chapter link function
+      window.copyChapterLink = function(chNum) {
+        const ch = BOOK_DATA.find(c => c.num === chNum);
+        const chTitle = ch ? ch.title : '';
+        const url = window.location.origin + window.location.pathname + '#c' + chNum;
+        const shareTitle = 'Chương ' + chNum + ': ' + chTitle + ' · Cẩm nang sống tối ưu hiệu suất';
+
+        if (navigator.share) {
+          navigator.share({
+            title: shareTitle,
+            text: 'Đọc Chương ' + chNum + ': ' + chTitle + ' trong Cẩm nang sống tối ưu hiệu suất',
+            url: url
+          }).catch(err => {
+            if (err.name !== 'AbortError') {
+              copyUrlToClipboard(url, 'Đã sao chép liên kết Chương ' + chNum + '!');
+            }
+          });
+        } else {
+          copyUrlToClipboard(url, 'Đã sao chép liên kết Chương ' + chNum + '!');
+        }
+      };
+
+      // Global copy item link function
       window.copyItemLink = function(anchorId) {
         const url = window.location.origin + window.location.pathname + '#' + anchorId;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(url).then(() => showToast('Đã sao chép liên kết vào bộ nhớ tạm!'));
-        } else {
-          showToast('Đã lưu địa chỉ mục #' + anchorId);
-        }
+        const itemNum = anchorId.replace(/^c[0-9]+[-_]i/, '');
+        copyUrlToClipboard(url, 'Đã sao chép liên kết mục #' + itemNum + '!');
       };
 
       // Filter Logic
@@ -1596,7 +1693,19 @@ const htmlTemplate = `<!DOCTYPE html>
               matchCount += filteredItems.length;
               matchedChaptersHtml += \`
                 <div class="chapter-header-box" style="margin-top: 2.5rem;">
-                  <span class="chapter-badge-tag">Chương \${ch.num}</span>
+                  <div class="chapter-header-top">
+                    <span class="chapter-badge-tag">Chương \${ch.num}</span>
+                    <button class="chapter-share-btn" onclick="window.copyChapterLink(\${ch.num})" title="Chia sẻ liên kết Chương \${ch.num}">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="18" cy="5" r="3"></circle>
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                      </svg>
+                      <span>Chia sẻ chương</span>
+                    </button>
+                  </div>
                   <h2 class="chapter-main-title" style="font-size: 1.6rem;">\${ch.title}</h2>
                 </div>
                 <div class="items-container">
@@ -1633,7 +1742,19 @@ const htmlTemplate = `<!DOCTYPE html>
             html += \`
               <section class="chapter-section" id="c\${ch.num}" style="margin-bottom: 4.5rem;">
                 <div class="chapter-header-box">
-                  <span class="chapter-badge-tag">Chương \${ch.num} · \${ch.items.length} lời khuyên</span>
+                  <div class="chapter-header-top">
+                    <span class="chapter-badge-tag">Chương \${ch.num} · \${ch.items.length} lời khuyên</span>
+                    <button class="chapter-share-btn" onclick="window.copyChapterLink(\${ch.num})" title="Chia sẻ liên kết Chương \${ch.num}">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="18" cy="5" r="3"></circle>
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                      </svg>
+                      <span>Chia sẻ chương</span>
+                    </button>
+                  </div>
                   <h2 class="chapter-main-title">\${ch.num}. \${ch.title}</h2>
                   \${ch.intro ? \`<div class="chapter-intro-box">\${ch.intro}</div>\` : ''}
                 </div>
@@ -1670,7 +1791,19 @@ const htmlTemplate = `<!DOCTYPE html>
           html = \`
             <section class="chapter-section" id="c\${ch.num}">
               <div class="chapter-header-box">
-                <span class="chapter-badge-tag">Chương \${ch.num} / \${BOOK_DATA.length} · \${ch.items.length} lời khuyên</span>
+                <div class="chapter-header-top">
+                  <span class="chapter-badge-tag">Chương \${ch.num} / \${BOOK_DATA.length} · \${ch.items.length} lời khuyên</span>
+                  <button class="chapter-share-btn" onclick="window.copyChapterLink(\${ch.num})" title="Chia sẻ liên kết Chương \${ch.num}">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="18" cy="5" r="3"></circle>
+                      <circle cx="6" cy="12" r="3"></circle>
+                      <circle cx="18" cy="19" r="3"></circle>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                    <span>Chia sẻ chương</span>
+                  </button>
+                </div>
                 <h1 class="chapter-main-title">\${ch.num}. \${ch.title}</h1>
                 \${ch.intro ? \`<div class="chapter-intro-box">\${ch.intro}</div>\` : ''}
               </div>
@@ -1798,40 +1931,119 @@ const htmlTemplate = `<!DOCTYPE html>
         }
       });
 
-      // Handle URL hash on initial load
-      function handleInitialHash() {
-        const hash = window.location.hash;
-        if (!hash) return;
-
-        const chMatch = hash.match(/^#c(\d+)/);
-        if (chMatch) {
-          const chNum = parseInt(chMatch[1], 10);
-          const foundIdx = BOOK_DATA.findIndex(c => c.num === chNum);
-          if (foundIdx !== -1) {
-            currentChapterIndex = foundIdx;
+      function updateDocumentTitle() {
+        if (viewMode === 'chapter') {
+          const ch = BOOK_DATA[currentChapterIndex];
+          if (ch) {
+            document.title = 'Chương ' + ch.num + ': ' + ch.title + ' · Cẩm nang sống tối ưu hiệu suất';
+            return;
           }
+        }
+        document.title = 'Cẩm Nang Sống Tối Ưu Hiệu Suất · Hướng Dẫn Thực Chứng';
+      }
+
+      // Parse target from hash (#c1, #c1-i5, #chuong-1, etc.) or query string (?c=1)
+      function parseTargetFromUrl() {
+        const hash = window.location.hash || '';
+        const search = window.location.search || '';
+
+        // Query param fallback (?c=1 hoặc ?chapter=1 hoặc ?chuong=1)
+        if (search) {
+          const params = new URLSearchParams(search);
+          const qVal = params.get('c') || params.get('chapter') || params.get('chuong');
+          if (qVal) {
+            const chNum = parseInt(qVal, 10);
+            if (!isNaN(chNum)) return { chNum, targetId: 'c' + chNum, isItem: false };
+          }
+        }
+
+        if (!hash) return null;
+
+        // Item format: #c1-i3 hoặc #c1_i3
+        const itemMatch = hash.match(/^#c([0-9]+)[-_]i([0-9]+)/i);
+        if (itemMatch) {
+          return {
+            chNum: parseInt(itemMatch[1], 10),
+            itemNum: parseInt(itemMatch[2], 10),
+            targetId: hash.substring(1),
+            isItem: true
+          };
+        }
+
+        // Chapter format: #c1, #c01, #chuong-1, #chuong1, #chapter-1, #chapter1
+        const chMatch = hash.match(/^#(?:c|chuong-?|chapter-?)([0-9]+)$/i);
+        if (chMatch) {
+          return {
+            chNum: parseInt(chMatch[1], 10),
+            targetId: 'c' + parseInt(chMatch[1], 10),
+            isItem: false
+          };
+        }
+
+        return null;
+      }
+
+      function applyTargetNavigation(isInitial = false) {
+        const target = parseTargetFromUrl();
+        if (!target) {
+          updateDocumentTitle();
+          return;
+        }
+
+        const foundIdx = BOOK_DATA.findIndex(c => c.num === target.chNum);
+        if (foundIdx !== -1) {
+          const changed = (currentChapterIndex !== foundIdx);
+          currentChapterIndex = foundIdx;
+
+          if (viewMode === 'chapter') {
+            if (changed || isInitial) {
+              renderContent();
+              renderSidebarList();
+            }
+          }
+
+          updateDocumentTitle();
+
+          setTimeout(() => {
+            let el = null;
+            if (target.targetId) {
+              el = document.getElementById(target.targetId);
+            }
+            if (!el && window.location.hash) {
+              try { el = document.querySelector(window.location.hash); } catch(e){}
+            }
+
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              if (target.isItem) {
+                el.style.borderColor = 'var(--accent)';
+                el.style.boxShadow = '0 0 0 3px var(--accent-light)';
+                setTimeout(() => {
+                  el.style.borderColor = '';
+                  el.style.boxShadow = '';
+                }, 2500);
+              }
+            } else if (!target.isItem && !isInitial) {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }, 150);
         }
       }
 
-      function scrollToHashItem() {
-        const hash = window.location.hash;
-        if (!hash) return;
-        setTimeout(() => {
-          const el = document.querySelector(hash);
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth' });
-            el.style.borderColor = 'var(--accent)';
-            setTimeout(() => { el.style.borderColor = ''; }, 2000);
-          }
-        }, 120);
-      }
+      // Listen to URL hash & popstate changes for back/forward navigation and links
+      window.addEventListener('hashchange', () => {
+        applyTargetNavigation(false);
+      });
+      window.addEventListener('popstate', () => {
+        applyTargetNavigation(false);
+      });
 
       // Init
       initPreferences();
-      handleInitialHash();
+      applyTargetNavigation(true);
       renderSidebarList();
       renderContent();
-      scrollToHashItem();
+      applyTargetNavigation(false);
 
     })();
   </script>
