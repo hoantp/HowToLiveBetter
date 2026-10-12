@@ -1291,9 +1291,9 @@ const htmlTemplate = `<!DOCTYPE html>
     <span id="toast-msg">Đã sao chép liên kết</span>
   </div>
 
-  <!-- Embedded Book Data -->
+  <!-- Book data: filled from book_data.json at startup (see Init below) -->
   <script>
-    const BOOK_DATA = ${JSON.stringify(chapters)};
+    let BOOK_DATA = [];
   </script>
 
   <!-- Reader Application Logic -->
@@ -2038,12 +2038,25 @@ const htmlTemplate = `<!DOCTYPE html>
         applyTargetNavigation(false);
       });
 
-      // Init
-      initPreferences();
-      applyTargetNavigation(true);
-      renderSidebarList();
-      renderContent();
-      applyTargetNavigation(false);
+      // Init: read book_data.json first, then start the reader.
+      // fetch() cannot read local files opened with file://, so show a hint there.
+      fetch('book_data.json')
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(data => {
+          BOOK_DATA = data;
+          initPreferences();
+          applyTargetNavigation(true);
+          renderSidebarList();
+          renderContent();
+          applyTargetNavigation(false);
+        })
+        .catch(err => {
+          console.error('Không tải được book_data.json', err);
+          contentRenderArea.textContent = 'Không tải được book_data.json. Hãy mở trang qua địa chỉ http, ví dụ GitHub Pages hoặc chạy python3 -m http.server, không mở trực tiếp file HTML.';
+        });
 
     })();
   </script>
